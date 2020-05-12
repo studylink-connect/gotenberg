@@ -31,7 +31,7 @@ RUN wget -q -O - https://dl.google.com/linux/linux_signing_key.pub | apt-key add
 # |
 
 # https://github.com/nextcloud/docker/issues/380
-RUN mkdir -p /usr/share/man/man1mkdir -p /usr/share/man/man1 &&\ 
+RUN mkdir -p /usr/share/man/man1mkdir -p /usr/share/man/man1 &&\
     echo "deb http://httpredir.debian.org/debian/ buster-backports main contrib non-free" >> /etc/apt/sources.list &&\
     apt-get update &&\
     apt-get -t buster-backports -y install libreoffice
@@ -68,7 +68,7 @@ RUN apt-get -y install pdftk
 # | Note: ttf-mscorefonts-installer are installed on top of this Dockerfile.
 # |
 
-# Credits: 
+# Credits:
 # https://github.com/arachnys/athenapdf/blob/master/cli/Dockerfile
 # https://help.accusoft.com/PrizmDoc/v12.1/HTML/Installing_Asian_Fonts_on_Ubuntu_and_Debian.html
 RUN apt-get install -y \
@@ -97,10 +97,32 @@ COPY build/base/fonts/* /usr/local/share/fonts/
 COPY build/base/fonts.conf /etc/fonts/conf.d/100-gotenberg.conf
 
 # |--------------------------------------------------------------------------
+# | PDFtk-java
+# |--------------------------------------------------------------------------
+# |
+# | Installs newer version of PDFtk-java
+# | https://github.com/thecodingmachine/gotenberg/issues/29
+# |
+
+RUN apt-get install -y --no-install-recommends packaging-dev debian-keyring devscripts equivs &&\
+    echo "deb http://deb.debian.org/debian sid main" >> /etc/apt/sources.list &&\
+    echo "deb-src http://deb.debian.org/debian sid main" >> /etc/apt/sources.list &&\
+    apt-get update &&\
+    apt source -t sid pdftk-java &&\
+    cd pdftk-java-*/ &&\
+    mk-build-deps --install --remove &&\
+    dpkg-buildpackage -us -uc &&\
+    apt install ../pdftk-java*.deb &&\
+    apt-get --purge autoremove packaging-dev debian-keyring devscripts equivs &&\
+    echo "deb http://httpredir.debian.org/debian/ buster main contrib non-free" > /etc/apt/sources.list &&\
+    echo "deb http://httpredir.debian.org/debian/ buster-backports main contrib non-free" >> /etc/apt/sources.list &&\
+    apt-get update
+
+# |--------------------------------------------------------------------------
 # | Default user
 # |--------------------------------------------------------------------------
 # |
-# | All processes in the Docker container will run as a dedicated 
+# | All processes in the Docker container will run as a dedicated
 # | non-root user.
 # |
 
